@@ -1,0 +1,127 @@
+### Arch encrypted install, straight copy from ###
+## http://www.circuidipity.com/arch-install-encrypt.html ###
+
+# Net connection
+
+ip link
+
+## Wifi 
+
+wifi-menu
+
+# Secure wipe storage
+
+cryptsetup open --type plain /dev/sdX container
+dd if=/dev/zero of=/dev/mapper/container
+
+# Close container
+
+cryptsetup close /dev/mapper/container
+
+# Partition
+
+cfdisk /dev/sdX 
+
+## 3 Partitions layout (Non-UEFI)##
+
+sda1 - 300M - boot (unencrypted)
+sda2 - 8GB - swap (encrypted)
+sda3 - remaining space - root (encrypted)
+
+# Encrypted root
+
+cryptsetup -y -v luksFormat /dev/sda3
+cryptsetup open /dev/sda3 cryptroot
+mkfs.ext4 /dev/mapper/cryptroot
+mount -t ext4 /dev/mapper/cryptroot /mnt
+
+# Boot
+
+mkfs.ext4 /dev/sda1
+mkdir /mnt/boot
+mount -t ext4 /dev/sda1 /mnt/boot
+
+# Install (base)
+
+pacstrap -i /mnt base base-devel
+
+# Fstab
+
+genfstab -U -p /mnt >> /mnt/etc/fstab
+nano /mnt/etc/fstab
+
+# Chroot
+
+arch-chroot /mnt /bin/bash
+
+# Locale
+
+nano /etc/locale.gen
+...
+en_US.UTF-8 UTF-8
+...
+locale-gen
+echo LANG=en_US.UTF-8 > /etc/locale.conf
+export LANG=en_US.UTF-8
+
+# Time zone
+
+ln -s /usr/share/zoneinfo/Canada/Eastern 
+/etc/localtime
+
+# Hardware clock
+
+hwclock --systohc --utc
+
+# Hostname
+
+echo myhostname > /etc/hostname
+
+## Modify host
+
+/etc/hosts
+
+# Network (wireless)
+
+pacman -S iw wpa_supplicant dialog
+
+# Initial ramdisk
+## Modify /etc/mkinitcpio.conf by adding an encrypt hook before filesystems
+
+HOOKS="... encrypt ... filesystems ..."
+mkinitcpio -p linux
+
+# Password
+
+passwd
+
+# Bootloader
+
+pacman -S grub os-prober #os-prober for other os
+
+## Configure /etc/default/grub to handle encrypted root
+
+GRUB_CMDLINE_LINUX="cryptdevice=/dev/sda3:cryptroot"
+
+### Grub things
+
+grub-install --target=i386-pc --recheck /dev/sda
+grub-mkconfig -o /boot/grub/grub.cfg
+
+# Prepare non-root encrypted partitions
+## Add unencrypted swap to /etc/cryptlab
+
+cryptswap    /dev/sda3   /dev/urandom    swap,cipher=aes-cbc-essiv:sha256,size=256
+
+## Modify /etc/fstab
+
+/dev/mapper/cryptswap    none    swap    sw      0 0
+
+# Unmount, reboot
+
+exit
+umount /mnt/boot
+umount /mnt
+cryptsetup close /dev/mapper/cryptroot
+reboot
+
