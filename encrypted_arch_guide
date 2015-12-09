@@ -1,5 +1,5 @@
 ### Arch encrypted install, straight copy from ###
-## http://www.circuidipity.com/arch-install-encrypt.html ###
+## http://www.circuidipity.com/arch-install-encrypt.html ##
 
 # Net connection
 
@@ -22,7 +22,7 @@ cryptsetup close /dev/mapper/container
 
 cfdisk /dev/sdX 
 
-## 3 Partitions layout (Non-UEFI)##
+## 3 Partitions layout (Non-UEFI) ##
 
 sda1 - 300M - boot (unencrypted)
 sda2 - 8GB - swap (encrypted)
