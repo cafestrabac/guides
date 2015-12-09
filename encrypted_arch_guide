@@ -1,5 +1,6 @@
-### Arch encrypted install, straight copy from ###
+### Arch encrypted install, straight copy from: ###
 ## http://www.circuidipity.com/arch-install-encrypt.html ##
+# https://www.howtoforge.com/tutorial/how-to-install-arch-linux-with-full-disk-encryption/ #
 
 # Net connection
 
@@ -24,22 +25,22 @@ cfdisk /dev/sdX
 
 ## 3 Partitions layout (Non-UEFI) ##
 
-sda1 - 300M - boot (unencrypted)
-sda2 - 8GB - swap (encrypted)
-sda3 - remaining space - root (encrypted)
+sdX1 - 300M - boot (unencrypted)
+sdX2 - 8GB - swap (encrypted)
+sdX3 - remaining space - root (encrypted)
 
 # Encrypted root
 
-cryptsetup -y -v luksFormat /dev/sda3
-cryptsetup open /dev/sda3 cryptroot
+cryptsetup -y -v luksFormat /dev/sdX3
+cryptsetup open /dev/sdX3 cryptroot
 mkfs.ext4 /dev/mapper/cryptroot
 mount -t ext4 /dev/mapper/cryptroot /mnt
 
 # Boot
 
-mkfs.ext4 /dev/sda1
+mkfs.ext4 /dev/sdX1
 mkdir /mnt/boot
-mount -t ext4 /dev/sda1 /mnt/boot
+mount -t ext4 /dev/sdX1 /mnt/boot
 
 # Install (base)
 
@@ -66,8 +67,7 @@ export LANG=en_US.UTF-8
 
 # Time zone
 
-ln -s /usr/share/zoneinfo/Canada/Eastern 
-/etc/localtime
+ln -s /usr/share/zoneinfo/Canada/Eastern /etc/localtime
 
 # Hardware clock
 
@@ -95,13 +95,31 @@ mkinitcpio -p linux
 
 passwd
 
+# Add system user
+
+useradd -m -g users -G wheel,games,power,optical,storage,scanner,lp,audio,video -s /bin/bash username
+
+# System user password
+
+passwd username
+
+# Install sudo
+
+pacman -S sudo
+
+# Modify sudoers (nano)
+
+EDITOR=nano visudo
+
+## Remove # from %wheel ALL=(ALL) ALL
+
 # Bootloader
 
 pacman -S grub os-prober #os-prober for other os
 
 ## Configure /etc/default/grub to handle encrypted root
 
-GRUB_CMDLINE_LINUX="cryptdevice=/dev/sda3:cryptroot"
+GRUB_CMDLINE_LINUX="cryptdevice=/dev/sdX3:cryptroot"
 
 ### Grub things
 
@@ -111,7 +129,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 # Prepare non-root encrypted partitions
 ## Add unencrypted swap to /etc/cryptlab
 
-cryptswap    /dev/sda3   /dev/urandom    swap,cipher=aes-cbc-essiv:sha256,size=256
+cryptswap    /dev/sdX2   /dev/urandom    swap,cipher=aes-cbc-essiv:sha256,size=256
 
 ## Modify /etc/fstab
 
