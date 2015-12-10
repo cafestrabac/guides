@@ -149,3 +149,6 @@ umount /mnt
 cryptsetup close /dev/mapper/cryptroot
 reboot
 
+### To use suspend ###
+
+https://wiki.archlinux.org/index.php/Dm-crypt/Swap_encryption#With_suspend-to-disk_support
