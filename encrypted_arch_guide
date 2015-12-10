@@ -1,6 +1,7 @@
-### Arch encrypted install, straight copy from: ###
+### Arch encrypted install (without suspend), sources from: ###
 ## http://www.circuidipity.com/arch-install-encrypt.html ##
-# https://www.howtoforge.com/tutorial/how-to-install-arch-linux-with-full-disk-encryption/ #
+## https://www.howtoforge.com/tutorial/how-to-install-arch-linux-with-full-disk-encryption/ ##
+## https://wiki.archlinux.org/index.php/Dm-crypt/Swap_encryption ##
 
 # Net connection
 
@@ -118,22 +119,27 @@ EDITOR=nano visudo
 pacman -S grub os-prober #os-prober for other os
 
 ## Configure /etc/default/grub to handle encrypted root
+### lsblk -f (to show the UUID of /dev/sdX3/)
 
-GRUB_CMDLINE_LINUX="cryptdevice=/dev/sdX3:cryptroot"
+GRUB_CMDLINE_LINUX="cryptdevice=UUID=XXX:cryptroot"
 
 ### Grub things
 
 grub-install --target=i386-pc --recheck /dev/sda
 grub-mkconfig -o /boot/grub/grub.cfg
 
-# Prepare non-root encrypted partitions
-## Add unencrypted swap to /etc/cryptlab
+# Prepare swap things
+## Make swap label
 
-cryptswap    /dev/sdX2   /dev/urandom    swap,cipher=aes-cbc-essiv:sha256,size=256
+mkfs.ext2 -L cryptswap /dev/sdX2 1M
 
-## Modify /etc/fstab
+### Add unencrypted swap to /etc/cryptlab
 
-/dev/mapper/cryptswap    none    swap    sw      0 0
+cryptswap      LABEL=cryptswap  /dev/urandom            swap,offset=2048,cipher=aes-xts-plain64,size=512
+
+#### Modify /etc/fstab
+
+/dev/mapper/cryptswap    none    defaults    sw      0 0
 
 # Unmount, reboot
 
