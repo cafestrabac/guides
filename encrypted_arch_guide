@@ -21,14 +21,24 @@ dd if=/dev/zero of=/dev/mapper/container
 cryptsetup close /dev/mapper/container
 
 # Partition
+## Write partion table
+
+parted /dev/sdX
+(parted) mklabel msdos (bios)
+(parted) mklabel gpt   (uefi)
+quit
+
+### Create partions
 
 cfdisk /dev/sdX 
 
-## 3 Partitions layout (Non-UEFI) ##
+#### 3 Partitions layout (Non-UEFI) 
 
 sdX1 - 300M - boot (unencrypted)
 sdX2 - 8GB - swap (encrypted)
 sdX3 - remaining space - root (encrypted)
+
+mkfs.ext4 /dev/sdXx (if necessary)
 
 # Encrypted root
 
@@ -104,10 +114,6 @@ useradd -m -g users -G wheel,games,power,optical,storage,scanner,lp,audio,video 
 
 passwd username
 
-# Install sudo
-
-pacman -S sudo
-
 # Modify sudoers (nano)
 
 EDITOR=nano visudo
@@ -119,13 +125,13 @@ EDITOR=nano visudo
 pacman -S grub os-prober #os-prober for other os
 
 ## Configure /etc/default/grub to handle encrypted root
-### lsblk -f (to show the UUID of /dev/sdX3/)
+### blkid /dev/sdX3 (to show the UUID of /dev/sdX3/)
 
 GRUB_CMDLINE_LINUX="cryptdevice=UUID=XXX:cryptroot"
 
 ### Grub things
 
-grub-install --target=i386-pc --recheck /dev/sda
+grub-install --target=i386-pc --recheck /dev/sdX
 grub-mkconfig -o /boot/grub/grub.cfg
 
 # Prepare swap things
